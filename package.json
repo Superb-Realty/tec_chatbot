@@ -1,0 +1,23 @@
+{
+  "name": "tec-chatbot-backend",
+  "version": "1.0.0",
+  "description": "High-Concurrency Hybrid RAG Sales Chatbot Backend for The Eastern Chambers (Handles 500+ Concurrent Users)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --no-warnings --watch src/server.ts",
+    "start": "node --no-warnings src/server.ts",
+    "ingest": "node --no-warnings src/scripts/ingest.ts",
+    "test-db": "node --no-warnings src/scripts/test-db.ts",
+    "load-test": "node --no-warnings src/scripts/load-test-500.ts",
+    "typecheck": "npx tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.2"
+  }
+}
+

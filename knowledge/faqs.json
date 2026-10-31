@@ -1,0 +1,149 @@
+[
+  {
+    "id": "faq-project-name",
+    "category": "Project Identity",
+    "question": "What is the name of the Project?",
+    "answer": "The project is named The Eastern Chambers, a Grade A+ commercial workspace landmark on LBS Marg, Vikhroli West, Mumbai (MahaRERA Reg. No: P51800054892).",
+    "tags": ["name", "project", "the eastern chambers", "rera", "p51800054892"]
+  },
+  {
+    "id": "faq-developers",
+    "category": "Developer & Architects",
+    "question": "Who are the Developers of The Eastern Chambers?",
+    "answer": "The Eastern Chambers is developed by Superb Realty & GHP Group under the single entity Amber Spaces LLP. Together, Superb Realty (building on the 30+ year legacy of Skyline Group with 5M+ sq.ft. delivered) and GHP Group (50+ years of experience with 3.5M+ sq.ft. delivered) bring 80+ years of collective legacy, 8.5 Million+ sq.ft. delivered, and 50+ completed projects.",
+    "tags": ["developers", "builder", "superb realty", "ghp group", "amber spaces llp", "skyline group", "entity"]
+  },
+  {
+    "id": "faq-architects",
+    "category": "Developer & Architects",
+    "question": "Who are the Architects of The Eastern Chambers?",
+    "answer": "The principal architects for The Eastern Chambers are Daisaria Associates.",
+    "tags": ["architect", "architects", "daisaria associates", "design", "designed by"]
+  },
+  {
+    "id": "faq-location",
+    "category": "Location & Address",
+    "question": "Where is the Project Located?",
+    "answer": "The Eastern Chambers is strategically located at LBS Marg, Vikhroli West (Amber Compound, Plot No. 11A, LBS Marg, Surya Nagar, Vikhroli West, Mumbai 400079), just a 2-minute walk from Surya Nagar Metro Station (Line 4) and Vikhroli Railway Station.",
+    "tags": ["location", "address", "where", "lbs marg", "vikhroli", "vikhroli west", "amber compound"]
+  },
+  {
+    "id": "faq-price-trend-pricing",
+    "category": "Pricing & Micro-Market Trends",
+    "question": "What is the Price Trend in the Micro-Market (Rental and Capital rates)?",
+    "answer": "In the Vikhroli / LBS Marg commercial micro-market, the current price trends are:\n• Rental Rate Trend: ₹175 to ₹350 per sq.ft.\n• Capital Value Trend: ₹33,000 to ₹39,000++ per sq.ft. (with comparable micro-market benchmarks at Lodha 37++ and Kalpataru 39++).\nFor unit-specific pricing and customized commercial sheets based on your floor and carpet area preference (starting from 391 sq.ft. to ~13,500 sq.ft. full floor plates), please share your Name and Phone Number or call +91 9090 263 264.",
+    "tags": ["price", "pricing", "rate", "psf", "rental", "rent", "capital", "cost", "budget", "lodha", "kalpataru", "micro-market", "roi"]
+  },
+  {
+    "id": "faq-existing-connectivity",
+    "category": "Connectivity & Transit",
+    "question": "What are the Existing Connectivity Nodes near The Eastern Chambers?",
+    "answer": "Key existing connectivity nodes include:\n• LBS Marg (Direct frontage)\n• EEH (Eastern Express Highway, 1.6 KM / 3 to 4 mins)\n• JVLR (Jogeshwari-Vikhroli Link Road, 2.2 KM / 5 mins)\n• AGLR (Andheri-Ghatkopar Link Road & Ghatkopar Metro Line 1)\n• Central Railway (Vikhroli Railway Station, 0.4 KM / 2 mins walk)\n• CSMIA T2 International Airport (7.4 KM / 15 to 18 mins) & BKC (10 KM / 18 mins).",
+    "tags": ["existing connectivity", "connectivity", "lbs", "eeh", "jvlr", "aglr", "central railway", "vikhroli station", "highway", "airport"]
+  },
+  {
+    "id": "faq-upcoming-connectivity",
+    "category": "Connectivity & Transit",
+    "question": "What are the Upcoming Connectivity Nodes and Infrastructure projects?",
+    "answer": "Upcoming transformational connectivity nodes include:\n• Metro Lines: Metro Line 4 (Surya Nagar Station, 0.2 KM / 2 min walk), Metro Line 6 (Swami Samarth to Vikhroli, 2.8 KM), and Metro Line 14 (Vikhroli to Badlapur corridor, 0.7 KM)\n• Road & Bridge Corridors: Eastern Freeway Extension, GMLR (Goregaon-Mulund Link Road), Vikhroli-Kopar Khairane Creek Bridge (Navi Mumbai link), and the 90 Feet DP Road.",
+    "tags": ["upcoming", "infrastructure", "metro", "metro 4", "metro 6", "metro 14", "eastern freeway", "gmlr", "koparkhairane bridge", "future"]
+  },
+  {
+    "id": "faq-nearby-social-infra",
+    "category": "Locality & Social Infrastructure",
+    "question": "What are the nearby Hotels, Healthcare facilities, and Entertainment malls?",
+    "answer": "• Business Hotels: Ibis Mumbai Vikhroli (1.5 KM), Taj The Trees (1.6 KM), Meluha The Fern Powai (2.3 KM)\n• Healthcare / Hospitals: Sai Hospital (0.2 KM), Samarth Hospital (0.1 KM), Godrej Memorial Hospital (0.8 KM), Dr. L. H. Hiranandani Hospital (2.0 KM)\n• Entertainment & Retail Malls: R City Mall (2.0 KM), Powai Plaza (2.6 KM), Phoenix Marketcity (6.0 KM).",
+    "tags": ["hotels", "healthcare", "hospitals", "entertainment", "malls", "ibis", "taj", "meluha", "sai", "hiranandani", "godrej memorial", "r city", "powai plaza", "market city"]
+  },
+  {
+    "id": "faq-plot-area-land",
+    "category": "Plot & Area Specifications",
+    "question": "What is the Plot Area and land tenure of The Eastern Chambers?",
+    "answer": "The Eastern Chambers is developed on approximately 39,500 sq.ft. (~1 Acre) of Freehold Land, complete with a 10,000 sq.ft. dedicated biophilic green reserve.",
+    "tags": ["plot area", "land", "acre", "39500", "freehold", "freehold land", "size"]
+  },
+  {
+    "id": "faq-total-carpet-area",
+    "category": "Plot & Area Specifications",
+    "question": "What is the Total Carpet Area of the project?",
+    "answer": "The total RERA Carpet Area of The Eastern Chambers is approximately 2,10,000 sq.ft. (~2.10 Lakh sq.ft. RERA Carpet).",
+    "tags": ["total carpet area", "rera carpet", "210000", "2.10 lakh", "development size"]
+  },
+  {
+    "id": "faq-building-structure-floors",
+    "category": "Building & Floor Structure",
+    "question": "What is the Building Floor Structure and total height?",
+    "answer": "The building structure comprises:\n• 4 Basements\n• Ground + 1 (G+1) Retail & Double-Height Arrival Lobby with Café\n• 1 Podium Level (plus 2nd Podium drivers' room)\n• 17 Office Floors\n• Landscaped Rooftop Amenity Deck\nThe total building height is approximately 70 Meters (69.95 M).",
+    "tags": ["floor structure", "floors", "basement", "podium", "retail", "lobby", "17 floors", "building height", "70m", "69.95", "elevation"]
+  },
+  {
+    "id": "faq-drivers-room",
+    "category": "Parking & Support Facilities",
+    "question": "Is there a drivers' room? Where is it located?",
+    "answer": "Yes, a dedicated drivers' room is provided and is located on the 2nd Podium.",
+    "tags": ["driver", "drivers room", "chauffeur", "2nd podium", "waiting room"]
+  },
+  {
+    "id": "faq-floor-plate-minimum-size",
+    "category": "Floor Plates & Office Sizing",
+    "question": "What is the typical Floor Plate size and Minimum Carpet Size available?",
+    "answer": "• Typical Floor Plate Size: ~13,500 sq.ft. (Column-free floor plate)\n• Minimum Office Carpet Size: Starting from 391 sq.ft. (~400 sq.ft.) up to full-floor and multi-floor corporate configurations.",
+    "tags": ["floor plate", "13500", "minimum carpet", "391", "400 sq ft", "small office", "boutique office", "full floor", "carpet size"]
+  },
+  {
+    "id": "faq-refuge-floors-staircases",
+    "category": "Safety, Lifts & Core Specs",
+    "question": "Which floors are Refuge Floors and how many staircases are there?",
+    "answer": "• Refuge Floors: Office Floors 5 and 12\n• Staircases: 2 staircases for safe vertical egress and fire compliance.",
+    "tags": ["refuge", "refuge floor", "floor 5", "floor 12", "staircase", "staircases", "fire safety"]
+  },
+  {
+    "id": "faq-lifts-elevators",
+    "category": "Safety, Lifts & Core Specs",
+    "question": "How many Passenger, Service, and Fire Lifts (Elevators) are there?",
+    "answer": "The Eastern Chambers is equipped with 8 High-Speed Elevators in total:\n• 6 Passenger Lifts\n• 1 Service Lift\n• 1 Fire Lift",
+    "tags": ["lifts", "elevators", "passenger lift", "service lift", "fire lift", "speed of lift", "8 elevators"]
+  },
+  {
+    "id": "faq-floor-height",
+    "category": "Office Unit Specifications",
+    "question": "What is the Floor-to-Floor Height and Clear Height?",
+    "answer": "• Floor-to-Floor Height: 11’4” (11 feet 4 inches)\n• Clear Height: 10’8” to 10’10” (10 feet 8 inches to 10 feet 10 inches)",
+    "tags": ["height", "ceiling height", "floor to floor", "clear height", "11'4", "10'8", "10'10"]
+  },
+  {
+    "id": "faq-office-unit-deliverables",
+    "category": "Office Unit Specifications",
+    "question": "What is given inside the office units and what about washrooms?",
+    "answer": "Every office unit at The Eastern Chambers features:\n• Warm Shell Interiors\n• Vastu-Compliant Layout\n• Column-Free Layout with natural daylight\n• Attached private Washroom inside all offices\n• Dedicated Pantry provision in larger offices\n• Additionally, there is 1 Common Washroom per typical floor (alternating Male and Female across floors).",
+    "tags": ["office unit", "warm shell", "bare shell", "vastu", "pantry", "washroom", "restroom", "toilet", "column free", "interiors", "handover"]
+  },
+  {
+    "id": "faq-amenities-and-locations",
+    "category": "Amenities & Wellness",
+    "question": "Where are the dedicated amenity spaces located and what amenities are provided?",
+    "answer": "Dedicated amenity spaces are located on the **1st Podium** and the **Rooftop** (along with the ground-level reserve). Amenities include:\n• Gymnasium (Fitness Center)\n• Conference & Meeting Facilities\n• Multi-Sport Turf / Urban Court\n• 10,000 sq.ft. Dedicated Green Reserve & Sitout Garden\n• Biophilic Drop-off & Hospitality-Grade Double-Height Arrival Lobby with Café\n• Landscaped Rooftop with Elevated Workspace & Twilight Terrace\n• Active AQI Regulation (powered by Praan)\n• EV Charging Stations\n• App-based Visitor Management & Enlite IBMS.",
+    "tags": ["amenities", "gym", "conference", "turf", "multi-sport", "green reserve", "rooftop", "1st podium", "lobby", "cafe", "biophilic", "ev charging"]
+  },
+  {
+    "id": "faq-usps-certifications-facade",
+    "category": "USPs, Certifications & Technology",
+    "question": "What are the Project USPs, Building Certifications, Façade components, and AQI/BMS partners?",
+    "answer": "• Key Project USPs: Freehold Land (~1 Acre), Triple Global Certifications, Indoor Podium & Rooftop Amenities, Active AQI Regulation, Smart IBMS, and Triple-Side Views (Mangroves, Mountains, and City Skyline).\n• Pre-Aligned Global Certifications: LEED Gold*, WiredScore Gold*, and SmartScore Gold*.\n• Façade Components: Contemporary Stone, Metal, and Double-Glazed Glass (for thermal and acoustic insulation).\n• Technology Partners: AQI Infrastructure by **Praan** | Intelligent Building Management System (IBMS / BMS) by **Enlite**.",
+    "tags": ["usp", "usps", "certifications", "leed", "wiredscore", "smartscore", "gold", "facade", "stone", "metal", "glass", "aqi", "praan", "bms", "ibms", "enlite"]
+  },
+  {
+    "id": "faq-parking-types",
+    "category": "Parking & Support Facilities",
+    "question": "What types of parkings are available at The Eastern Chambers?",
+    "answer": "The Eastern Chambers offers 4 Basements and Podium parking with multiple configurations: Pit Parking, Stack Parking, Tandem Parking, and Surface Parking, along with EV Charging stations and a dedicated drivers' room on the 2nd Podium.",
+    "tags": ["parking", "parkings", "pit", "stack", "tandem", "surface", "basement", "car park", "ev"]
+  },
+  {
+    "id": "faq-rera-contact",
+    "category": "Legal & Contact",
+    "question": "What is the MahaRERA Registration Number and how can I schedule a site visit?",
+    "answer": "The Eastern Chambers is registered with MahaRERA under Registration No. P51800054892 (verify at https://maharera.mahaonline.gov.in). To receive the floor plan deck, unit pricing sheet, or schedule a private site visit at LBS Marg, Vikhroli West, simply share your Name and Phone Number here in the chat, or contact our Sales Desk at +91 9090 263 264 / info@superbrealty.in.",
+    "tags": ["rera", "maharera", "p51800054892", "contact", "site visit", "phone", "call", "enquire"]
+  }
+]
