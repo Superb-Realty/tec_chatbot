@@ -98,6 +98,61 @@ export async function handleRequest(
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = url.pathname;
 
+  // 0. Root Welcome / Status Page
+  if (req.method === "GET" && (pathname === "/" || pathname === "")) {
+    const isHtml = (req.headers.accept || "").includes("text/html");
+    if (isHtml) {
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Eastern Chambers — AI Sales Concierge Backend</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b1a15; color: #f2ede4; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .card { background: #122820; border: 1px solid #c9a96e; border-radius: 12px; padding: 32px; max-width: 580px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    h1 { color: #c9a96e; font-size: 22px; margin-top: 0; margin-bottom: 8px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: #1a4234; color: #7fe3b5; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+    .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #7fe3b5; }
+    p { line-height: 1.6; color: #d0d7d3; font-size: 14px; }
+    .endpoints { background: #091511; padding: 16px; border-radius: 8px; font-family: ui-monospace, Menlo, Monaco, monospace; font-size: 12px; margin: 20px 0; border: 1px solid #1a4234; }
+    .endpoints div { margin: 8px 0; color: #e2d5be; }
+    .endpoints span { color: #c9a96e; font-weight: bold; }
+    .footer { font-size: 12px; color: #889988; margin-top: 20px; border-top: 1px solid #1a4234; padding-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Operational</div>
+    <h1>The Eastern Chambers</h1>
+    <p>AI Sales Concierge backend is online with hybrid vector & BM25 retrieval, Supabase cloud persistence, and high-concurrency streaming.</p>
+    <div class="endpoints">
+      <div><span>POST</span> /api/chat — Streaming SSE chat endpoint</div>
+      <div><span>GET</span>  /api/health — System health & concurrency metrics</div>
+      <div><span>POST</span> /api/leads — Register commercial sales lead</div>
+      <div><span>GET</span>  /api/leads — Retrieve recent leads (Protected)</div>
+    </div>
+    <div class="footer">LBS Marg, Vikhroli West, Mumbai &bull; MahaRERA: P51800054892</div>
+  </div>
+</body>
+</html>`);
+      return;
+    }
+
+    sendJson(res, 200, {
+      service: "The Eastern Chambers — AI Sales Concierge Backend",
+      status: "online",
+      endpoints: {
+        chat: "POST /api/chat",
+        health: "GET /api/health",
+        leads: "POST /api/leads",
+      },
+      rag: ragEngine.getStatus(),
+    });
+    return;
+  }
+
   // 1. Health & Concurrency Status Endpoint
   if (req.method === "GET" && (pathname === "/health" || pathname === "/api/health")) {
     sendJson(res, 200, {
@@ -222,7 +277,7 @@ export async function handleRequest(
             sendSseEvent("lead_captured", {
               id: lead.id,
               name: lead.name,
-              phone: lead.phone,
+              phone: lead.phone.replace(/^'/, ""),
             });
           },
           onDone: () => {
@@ -308,8 +363,19 @@ export async function handleRequest(
     return;
   }
 
-  // 4. Get Recent Leads Summary
+  // 4. Get Recent Leads Summary (Protected - Secret Token Required)
   if (req.method === "GET" && pathname === "/api/leads") {
+    const authHeader = req.headers.authorization || "";
+    const secretHeader = req.headers["x-enquiry-secret"] || "";
+    const providedToken = authHeader.replace(/^Bearer\s+/i, "") || secretHeader;
+
+    if (providedToken !== ENV.ENQUIRY_SECRET_TOKEN) {
+      sendJson(res, 401, {
+        error: "Unauthorized: Access to client leads is strictly restricted.",
+      });
+      return;
+    }
+
     const recent = await getRecentLeads(20);
     sendJson(res, 200, {
       stats: getLeadStats(),

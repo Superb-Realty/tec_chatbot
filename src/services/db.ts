@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { ENV } from "../config/env.ts";
 import {
   fetchRecentLeadsFromSupabase,
@@ -23,84 +22,109 @@ export interface LeadRecord {
   createdAt: string;
 }
 
+// In-memory fallback ring buffer (holds up to 500 latest leads safely in RAM)
+const memoryLeads: LeadRecord[] = [];
+
+// SQLite instance & prepared statements (loaded dynamically if supported in runtime)
+let dbInstance: any = null;
+let insertLeadStmt: any = null;
+let markLeadSyncedStmt: any = null;
+let getRecentLeadsStmt: any = null;
+let getLeadCountStmt: any = null;
+
 const BACKEND_ROOT = path.resolve(import.meta.dirname, "../..");
-// On Vercel Serverless, /var/task is read-only; use /tmp for local fallback storage
-const isServerlessReadOnly = Boolean(
+const isServerless = Boolean(
   process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
 );
-const dataDir = isServerlessReadOnly
-  ? path.join(os.tmpdir(), "tec-chatbot-data")
-  : path.join(BACKEND_ROOT, "data");
-fs.mkdirSync(dataDir, { recursive: true });
 
-const dbPath = path.join(dataDir, "tec-chatbot.sqlite");
-const db = new DatabaseSync(dbPath);
+// Initialize SQLite safely with graceful fallback for serverless or older Node versions
+try {
+  const sqliteModule = await import("node:sqlite");
+  if (sqliteModule && typeof sqliteModule.DatabaseSync === "function") {
+    const dataDir = isServerless
+      ? path.join(os.tmpdir(), "tec-chatbot-data")
+      : path.join(BACKEND_ROOT, "data");
 
-// Configure SQLite for high-concurrency (500+ simultaneous users)
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA synchronous = NORMAL;
-  PRAGMA busy_timeout = 5000;
-  PRAGMA temp_store = MEMORY;
-  PRAGMA cache_size = -20000;
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+      const dbPath = path.join(dataDir, "tec-chatbot.sqlite");
+      const db = new sqliteModule.DatabaseSync(dbPath);
 
-  CREATE TABLE IF NOT EXISTS leads (
-    id TEXT PRIMARY KEY,
-    session_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    area_required TEXT DEFAULT '',
-    budget TEXT DEFAULT '',
-    additional_enquiry TEXT DEFAULT '',
-    source TEXT DEFAULT 'chat_tool',
-    client_ip TEXT DEFAULT '',
-    sheet_synced INTEGER DEFAULT 0,
-    sheet_error TEXT DEFAULT NULL,
-    created_at TEXT NOT NULL
-  );
+      // Configure SQLite for high concurrency
+      db.exec(`
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA busy_timeout = 5000;
+        PRAGMA temp_store = MEMORY;
+        PRAGMA cache_size = -20000;
 
-  CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone);
-  CREATE INDEX IF NOT EXISTS idx_leads_synced ON leads(sheet_synced);
-  CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at DESC);
-`);
+        CREATE TABLE IF NOT EXISTS leads (
+          id TEXT PRIMARY KEY,
+          session_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          phone TEXT NOT NULL,
+          area_required TEXT DEFAULT '',
+          budget TEXT DEFAULT '',
+          additional_enquiry TEXT DEFAULT '',
+          source TEXT DEFAULT 'chat_tool',
+          client_ip TEXT DEFAULT '',
+          sheet_synced INTEGER DEFAULT 0,
+          sheet_error TEXT DEFAULT NULL,
+          created_at TEXT NOT NULL
+        );
 
-const insertLeadStmt = db.prepare(`
-  INSERT INTO leads (
-    id, session_id, name, phone, area_required, budget,
-    additional_enquiry, source, client_ip, sheet_synced, created_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
-`);
+        CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone);
+        CREATE INDEX IF NOT EXISTS idx_leads_synced ON leads(sheet_synced);
+        CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at DESC);
+      `);
 
-const markLeadSyncedStmt = db.prepare(`
-  UPDATE leads
-  SET sheet_synced = ?, sheet_error = ?
-  WHERE id = ?
-`);
+      insertLeadStmt = db.prepare(`
+        INSERT INTO leads (
+          id, session_id, name, phone, area_required, budget,
+          additional_enquiry, source, client_ip, sheet_synced, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+      `);
 
-const getRecentLeadsStmt = db.prepare(`
-  SELECT
-    id,
-    session_id AS sessionId,
-    name,
-    phone,
-    area_required AS areaRequired,
-    budget,
-    additional_enquiry AS additionalEnquiry,
-    source,
-    client_ip AS clientIp,
-    sheet_synced AS sheetSynced,
-    created_at AS createdAt
-  FROM leads
-  ORDER BY created_at DESC
-  LIMIT ?
-`);
+      markLeadSyncedStmt = db.prepare(`
+        UPDATE leads
+        SET sheet_synced = ?, sheet_error = ?
+        WHERE id = ?
+      `);
 
-const getLeadCountStmt = db.prepare(`
-  SELECT
-    COUNT(*) AS total,
-    SUM(CASE WHEN sheet_synced = 1 THEN 1 ELSE 0 END) AS synced
-  FROM leads
-`);
+      getRecentLeadsStmt = db.prepare(`
+        SELECT
+          id,
+          session_id AS sessionId,
+          name,
+          phone,
+          area_required AS areaRequired,
+          budget,
+          additional_enquiry AS additionalEnquiry,
+          source,
+          client_ip AS clientIp,
+          sheet_synced AS sheetSynced,
+          created_at AS createdAt
+        FROM leads
+        ORDER BY created_at DESC
+        LIMIT ?
+      `);
+
+      getLeadCountStmt = db.prepare(`
+        SELECT
+          COUNT(*) AS total,
+          SUM(CASE WHEN sheet_synced = 1 THEN 1 ELSE 0 END) AS synced
+        FROM leads
+      `);
+
+      dbInstance = db;
+    } catch (fsErr) {
+      console.warn("[DB] SQLite database directory initialization skipped:", fsErr);
+    }
+  }
+} catch {
+  // node:sqlite is not available or disabled in this runtime
+  console.log("[DB] SQLite native engine not present in runtime. Falling back to Supabase + In-Memory store.");
+}
 
 /**
  * Neutralize spreadsheet formula injection (=, +, -, @)
@@ -141,20 +165,33 @@ export function saveLeadToDb(input: {
     createdAt,
   };
 
-  insertLeadStmt.run(
-    record.id,
-    record.sessionId,
-    record.name,
-    record.phone,
-    record.areaRequired,
-    record.budget,
-    record.additionalEnquiry,
-    record.source,
-    record.clientIp,
-    record.createdAt
-  );
+  // 1. Try local SQLite insert if available
+  if (insertLeadStmt) {
+    try {
+      insertLeadStmt.run(
+        record.id,
+        record.sessionId,
+        record.name,
+        record.phone,
+        record.areaRequired,
+        record.budget,
+        record.additionalEnquiry,
+        record.source,
+        record.clientIp,
+        record.createdAt
+      );
+    } catch (err) {
+      console.warn("[DB] SQLite insert failed:", err);
+    }
+  }
 
-  // Persist to Cloud Supabase PostgreSQL (`tec_sales_leads` table)
+  // 2. Keep in memory buffer
+  memoryLeads.unshift(record);
+  if (memoryLeads.length > 500) {
+    memoryLeads.pop();
+  }
+
+  // 3. Persist to Cloud Supabase PostgreSQL (`tec_sales_leads` table)
   if (ENV.SUPABASE_ENABLED) {
     void insertLeadToSupabase(record);
   }
@@ -167,7 +204,17 @@ export function updateLeadSyncStatus(
   synced: boolean,
   errorMsg: string | null = null
 ): void {
-  markLeadSyncedStmt.run(synced ? 1 : -1, errorMsg, id);
+  if (markLeadSyncedStmt) {
+    try {
+      markLeadSyncedStmt.run(synced ? 1 : -1, errorMsg, id);
+    } catch {}
+  }
+
+  const inMem = memoryLeads.find((l) => l.id === id);
+  if (inMem) {
+    inMem.sheetSynced = synced ? 1 : -1;
+  }
+
   if (ENV.SUPABASE_ENABLED) {
     void updateLeadSyncInSupabase(id, synced, errorMsg);
   }
@@ -178,13 +225,25 @@ export function getLeadStats(): {
   synced: number;
   storageEngine: string;
 } {
-  const row = getLeadCountStmt.get() as { total?: number; synced?: number } | undefined;
+  if (getLeadCountStmt) {
+    try {
+      const row = getLeadCountStmt.get() as { total?: number; synced?: number } | undefined;
+      return {
+        total: Number(row?.total || memoryLeads.length),
+        synced: Number(row?.synced || memoryLeads.filter((l) => l.sheetSynced === 1).length),
+        storageEngine: ENV.SUPABASE_ENABLED
+          ? "Supabase Cloud PostgreSQL + pgvector"
+          : "Local SQLite WAL",
+      };
+    } catch {}
+  }
+
   return {
-    total: Number(row?.total || 0),
-    synced: Number(row?.synced || 0),
+    total: memoryLeads.length,
+    synced: memoryLeads.filter((l) => l.sheetSynced === 1).length,
     storageEngine: ENV.SUPABASE_ENABLED
       ? "Supabase Cloud PostgreSQL + pgvector"
-      : "Local SQLite WAL (Add SUPABASE_URL in .env for Cloud DB)",
+      : "In-Memory Buffer (Add SUPABASE_URL in .env for Cloud DB)",
   };
 }
 
@@ -193,9 +252,25 @@ export async function getRecentLeads(limit = 25): Promise<LeadRecord[]> {
     const cloudLeads = await fetchRecentLeadsFromSupabase(limit);
     if (cloudLeads) return cloudLeads;
   }
-  return getRecentLeadsStmt.all(limit) as unknown as LeadRecord[];
+
+  if (getRecentLeadsStmt) {
+    try {
+      return getRecentLeadsStmt.all(limit) as unknown as LeadRecord[];
+    } catch {}
+  }
+
+  return memoryLeads.slice(0, limit);
 }
 
 export function clearTestLeads(): void {
-  db.exec(`DELETE FROM leads WHERE session_id LIKE 'loadtest_session_%'`);
+  if (dbInstance) {
+    try {
+      dbInstance.exec(`DELETE FROM leads WHERE session_id LIKE 'loadtest_session_%'`);
+    } catch {}
+  }
+  for (let i = memoryLeads.length - 1; i >= 0; i--) {
+    if (memoryLeads[i].sessionId.startsWith("loadtest_session_")) {
+      memoryLeads.splice(i, 1);
+    }
+  }
 }

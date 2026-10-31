@@ -10,7 +10,10 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["node"]
+    "typeRoots": [
+      "./node_modules/@types",
+      "../TEC-scrollable_website/node_modules/@types"
+    ]
   },
   "include": ["src/**/*", "api/**/*"]
 }

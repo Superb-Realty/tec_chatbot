@@ -80,16 +80,33 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return denom === 0 ? 0 : dot / denom;
 }
 
+function resolveKnowledgeDir(): string {
+  const candidates = [
+    path.join(process.cwd(), "knowledge"),
+    path.resolve(import.meta.dirname, "../../knowledge"),
+    path.resolve(import.meta.dirname, "../knowledge"),
+    path.resolve(import.meta.dirname, "knowledge"),
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate) && fs.existsSync(path.join(candidate, "faqs.json"))) {
+        return candidate;
+      }
+    } catch {}
+  }
+  return candidates[0];
+}
+
 class HybridRagEngine {
   private chunks: KnowledgeChunk[] = [];
   private idfMap = new Map<string, number>();
   private avgDocLen = 1;
   private queryEmbeddingCache = new Map<string, number[]>();
   private readonly maxQueryCacheSize = 2000;
-  private knowledgeDir = path.resolve(import.meta.dirname, "../../knowledge");
+  private knowledgeDir = resolveKnowledgeDir();
   private vectorCachePath =
     process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-      ? path.join(os.tmpdir(), "tec-chatbot-data/vector-index.json")
+      ? path.join(os.tmpdir(), "tec-chatbot-data", "vector-index.json")
       : path.resolve(import.meta.dirname, "../../data/vector-index.json");
   private isIndexing = false;
   private isInitialized = false;
