@@ -1,5 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
-import { isIP } from "node:net";
 import http from "node:http";
 import { pathToFileURL } from "node:url";
 import { ENV } from "./config/env.ts";
@@ -79,18 +77,10 @@ function readJsonBody<T>(
   });
 }
 
-function validToken(provided: unknown, expected: string): boolean {
-  if (typeof provided !== "string" || expected.length < 32) return false;
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 function getClientIp(req: http.IncomingMessage): string {
-  // Forwarded identity is accepted only from the authenticated website gateway.
-  if (validToken(req.headers["x-gateway-token"], ENV.BACKEND_GATEWAY_TOKEN)) {
-    const value = req.headers["x-forwarded-for"];
-    if (typeof value === "string" && isIP(value)) return value;
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.length > 0) {
+    return forwarded.split(",")[0].trim();
   }
   return req.socket.remoteAddress || "127.0.0.1";
 }
@@ -117,36 +107,6 @@ export async function handleRequest(
   const pathname = url.pathname;
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
-
-  const publicSubmission = req.method === "POST" && ["/api/chat", "/api/leads"].includes(pathname);
-  if (publicSubmission && !validToken(req.headers["x-gateway-token"], ENV.BACKEND_GATEWAY_TOKEN)) {
-    sendJson(res, 401, { error: "Unauthorized." });
-    return;
-  }
-  const adminRoute =
-    (req.method === "GET" && ["/api/leads", "/api/conversations", "/api/health", "/health"].includes(pathname)) ||
-    (req.method === "POST" && ["/api/faqs", "/api/rag/reload"].includes(pathname));
-  if (adminRoute && !validToken((req.headers.authorization || "").replace(/^Bearer\s+/i, ""), ENV.ADMIN_API_TOKEN)) {
-    sendJson(res, 401, { error: "Unauthorized." });
-    return;
-  }
-  if (publicSubmission) {
-    const key = `${pathname}:${getClientIp(req)}`;
-    const rate = ENV.SUPABASE_ENABLED ? await checkDistributedRateLimitInSupabase({
-      key, windowSeconds: pathname === "/api/leads" ? 600 : 60,
-      maxRequests: pathname === "/api/leads" ? 6 : ENV.RATE_LIMIT_MAX_MESSAGES_PER_IP,
-    }) : null;
-    if (!rate && (process.env.VERCEL || ENV.NODE_ENV === "production")) {
-      sendJson(res, 503, { error: "Service temporarily unavailable." });
-      return;
-    }
-    const result = rate || concurrencyGuard.checkRateLimit(key);
-    if (!result.allowed) {
-      res.setHeader("Retry-After", String(result.retryAfterSeconds || 60));
-      sendJson(res, 429, { error: "Too many requests. Please try again shortly." });
-      return;
-    }
-  }
 
 
   // 0. Root Welcome / Status Page
@@ -241,6 +201,24 @@ export async function handleRequest(
     }
 
     const sessionId = String(body.sessionId || clientIp).slice(0, 80);
+    const rateKey = `${clientIp}:${sessionId}`;
+
+    // Use Distributed Supabase Rate Limiter across instances when deployed, with in-memory fallback
+    const distributedRate = ENV.SUPABASE_ENABLED
+      ? await checkDistributedRateLimitInSupabase({
+          key: rateKey,
+          windowSeconds: Math.ceil(ENV.RATE_LIMIT_WINDOW_MS / 1000),
+          maxRequests: ENV.RATE_LIMIT_MAX_MESSAGES_PER_IP,
+        })
+      : null;
+
+    const rateCheck = distributedRate || concurrencyGuard.checkRateLimit(rateKey);
+    if (!rateCheck.allowed) {
+      sendJson(res, 429, {
+        error: `Rate limit reached. Please wait ${rateCheck.retryAfterSeconds}s before sending another message.`,
+      });
+      return;
+    }
     const cleanMessage = sanitizeUserMessage(body.message);
     if (!cleanMessage) {
       sendJson(res, 400, { error: "Please enter a valid message." });
@@ -423,6 +401,17 @@ export async function handleRequest(
 
   // 4. Get Recent Leads Summary (Protected - Secret Token Required)
   if (req.method === "GET" && pathname === "/api/leads") {
+    const authHeader = req.headers.authorization || "";
+    const secretHeader = req.headers["x-enquiry-secret"] || "";
+    const providedToken = authHeader.replace(/^Bearer\s+/i, "") || secretHeader;
+
+    if (providedToken !== ENV.ENQUIRY_SECRET_TOKEN) {
+      sendJson(res, 401, {
+        error: "Unauthorized: Access to client leads is strictly restricted.",
+      });
+      return;
+    }
+
     const recent = await getRecentLeads(20);
     sendJson(res, 200, {
       stats: getLeadStats(),
@@ -434,6 +423,17 @@ export async function handleRequest(
 
   // 5. Get Recent Chat Conversations for Analytics (Protected - Secret Token Required)
   if (req.method === "GET" && pathname === "/api/conversations") {
+    const authHeader = req.headers.authorization || "";
+    const secretHeader = req.headers["x-enquiry-secret"] || "";
+    const providedToken = authHeader.replace(/^Bearer\s+/i, "") || secretHeader;
+
+    if (providedToken !== ENV.ENQUIRY_SECRET_TOKEN) {
+      sendJson(res, 401, {
+        error: "Unauthorized: Access to conversation logs is strictly restricted.",
+      });
+      return;
+    }
+
     const sessionIdParam = url.searchParams.get("sessionId") || undefined;
     const requestedLimit = Number(url.searchParams.get("limit") || 50);
     const limitParam = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, Math.floor(requestedLimit))) : 50;

@@ -21,7 +21,7 @@ export interface LeadRecord {
   areaRequired: string;
   budget: string;
   additionalEnquiry: string;
-  source: "chat_tool" | "chat_form" | "chat_regex";
+  source: "chat_tool" | "chat_form" | "chat_regex" | "chat_direct";
   clientIp: string;
   sheetSynced: number;
   createdAt: string;
@@ -150,7 +150,7 @@ export function saveLeadToDb(input: {
   areaRequired?: string;
   budget?: string;
   additionalEnquiry?: string;
-  source?: "chat_tool" | "chat_form" | "chat_regex";
+  source?: "chat_tool" | "chat_form" | "chat_regex" | "chat_direct";
   clientIp?: string;
 }): LeadRecord {
   const id = `lead_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

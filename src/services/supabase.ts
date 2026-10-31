@@ -204,7 +204,7 @@ export async function fetchRecentLeadsFromSupabase(
       area_required: string;
       budget: string;
       additional_enquiry: string;
-      source: "chat_tool" | "chat_form" | "chat_regex";
+      source: "chat_tool" | "chat_form" | "chat_regex" | "chat_direct";
       client_ip: string;
       sheet_synced: boolean;
       created_at: string;
