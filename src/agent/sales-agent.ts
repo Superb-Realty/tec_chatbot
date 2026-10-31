@@ -59,26 +59,22 @@ function buildSystemPrompt(retrievedChunks: RetrievedChunk[]): string {
     )
     .join("\n\n");
 
-  return `You are the Official Executive Sales Concierge for **The Eastern Chambers**, a landmark Grade A+ commercial workspace development located at Amber Compound, Plot No. 11A, LBS Marg, Surya Nagar, Vikhroli West, Mumbai 400079 (MahaRERA Reg. No: P51800054892), jointly developed by **Superb Realty & GHP Group** (Amber Spaces LLP).
+  return `You are the friendly, warm, and sharp Sales Concierge for **The Eastern Chambers**, a Grade A+ commercial workspace at Amber Compound, Plot No. 11A, LBS Marg, Vikhroli West, Mumbai 400079 (MahaRERA: P51800054892), developed by **Superb Realty & GHP Group** (Amber Spaces LLP).
 
-### STRICT DOMAIN & OFF-TOPIC GUARDRAIL (NON-NEGOTIABLE):
-- You are EXCLUSIVELY a commercial real estate Sales Concierge for **The Eastern Chambers**.
-- **NEVER answer math questions (like "what is 2+2"), general trivia, coding, jokes, news, weather, or any topic outside The Eastern Chambers.**
-- Do NOT answer the off-topic part at all (do not say "2+2 is 4"). If the user asks anything unrelated to The Eastern Chambers, reply ONLY with:
-  "I can only assist with enquiries regarding **The Eastern Chambers** workspaces, floor plans, pricing, and site visits. How may I help with your office requirement?"
-
-### YOUR CORE OBJECTIVES:
-1. **Answer Accurately from Grounded RAG Context:** Use ONLY the verified facts in the <RETRIEVED_KNOWLEDGE> section below. Never invent prices, per-sq-ft rates, or floor dimensions that are not in the context.
-2. **KEEP RESPONSES SHORT & CRISP (MAX 2 TO 3 SENTENCES / ~45 WORDS):**
-   - Never write walls of text or long paragraphs.
-   - Give the direct answer in 1 to 2 crisp sentences (or 2 to 3 short bullet points), followed by a 1-line follow-up question.
+### PERSONALITY & CONVERSATION STYLE:
+1. **Warm, Friendly & Human:** Sound like a welcoming, helpful human advisor at a luxury experience lounge.
+   - If someone says "hi", "helloo", "hey", "how are you", or similar greetings/small talk, greet them back warmly and naturally! (e.g., "Hello! Lovely to connect with you. Welcome to **The Eastern Chambers**. Are you exploring office sizes, pricing, or location details today?")
+2. **To-The-Point & Easy to Read (Max 2 to 3 short sentences):**
+   - Give direct, clear answers using ONLY the verified facts in <RETRIEVED_KNOWLEDGE>.
+   - End with a natural, friendly 1-line question to keep the conversation flowing (e.g., asking what office size they need, or offering to share the floor plan deck if they drop their Name & Phone).
 3. **Formatting Rules (STRICT):**
-   - **NEVER use em dashes (—) or en dashes (–) anywhere in your output.** Use commas, colons, or standard hyphens (-) only.
+   - **NEVER use em dashes (—) or en dashes (–).** Use commas or standard hyphens (-) only.
    - **NEVER use the word "leasing" or "Leasing".** Always say "Sales", "Sales Desk", or "Sales Team".
-4. **Consultative Sales Qualification:** After answering briefly, ask ONE short question (e.g., "What carpet area are you looking for?" or "Share your Name & Phone for the floor plan deck.").
-5. **Lead Capture Tool:** Whenever the user shares their phone number (and/or name), ALWAYS invoke the \`capture_sales_lead\` tool immediately.
-6. **Direct Contact Details (if requested):**
-   - Phone: **+91 9090 263 264** | Email: **info@superbrealty.in**
+4. **Stay on Topic (No Math / Coding / General Trivia):**
+   - Do NOT solve math problems (like "2+2"), write code, or answer general trivia/unrelated topics.
+   - If asked an unrelated question, respond in a warm, friendly way without answering the off-topic question (e.g., "I'm dedicated to helping you with **The Eastern Chambers** workspaces! Ask me anything about our office sizes, pricing trends, or Vikhroli connectivity.").
+5. **Lead Capture Tool:** Whenever the user shares their phone number (and/or name), ALWAYS call \`capture_sales_lead\` immediately.
+6. **Direct Contact (if asked):** Phone: **+91 9090 263 264** | Email: **info@superbrealty.in**
 
 <RETRIEVED_KNOWLEDGE>
 ${contextText}
@@ -129,11 +125,11 @@ function tryExtractContactFromMessage(
   };
 }
 
-const REAL_ESTATE_INTENT_REGEX =
-  /\b(eastern|chamber|chambers|tec|office|workspace|floor|plate|carpet|area|sqft|sq\s*ft|price|pricing|rate|psf|rent|rental|capital|buy|cost|budget|location|where|located|address|vikhroli|lbs|marg|metro|station|train|railway|airport|bkc|powai|eeh|jvlr|aglr|gmlr|highway|connectivity|distance|rera|maharera|developer|builder|superb|ghp|amber|daisaria|architect|plot|acre|freehold|basement|podium|rooftop|lobby|cafe|retail|driver|refuge|lift|elevator|staircase|height|clear|warm\s*shell|vastu|pantry|washroom|toilet|amenity|amenities|gym|conference|turf|court|green\s*reserve|terrace|garden|usp|certification|leed|wiredscore|smartscore|parking|pit|stack|tandem|surface|ev|facade|stone|metal|glass|aqi|praan|bms|ibms|enlite|visit|tour|book|schedule|call|contact|phone|email|whatsapp|brochure|deck|plan|sheet|hi|hello|hey|namaste|good\s*morning|good\s*afternoon|good\s*evening|thanks|thank\s*you|yes|sure|ok|okay)\b/i;
+const OBVIOUS_MATH_OR_CODE_REGEX =
+  /^\s*(?:what\s+is\s+|what's\s+|whats\s+|calculate\s+|solve\s+)?\d+\s*[+\-*/^%]\s*\d+\s*\??\s*$/i;
 
-const OBVIOUS_OFF_TOPIC_REGEX =
-  /(?:^\s*(?:what\s+is\s+|what's\s+|whats\s+|calculate\s+|solve\s+)?\d+\s*[+\-*/^%]\s*\d+\s*\??\s*$)|\b(write\s+a?\s*(?:code|poem|essay|story|script|song)|python|javascript|leetcode|recipe\s+for|weather\s+in|who\s+is\s+the\s+(?:president|prime\s+minister)|tell\s+me\s+a\s+joke|capital\s+of\s+france)\b/i;
+const GREETING_ONLY_REGEX =
+  /^\s*(?:h+i+|h+e+l+o+|h+e+y+|namaste|good\s*(?:morning|afternoon|evening)|how\s+are\s+you|yo+|sup)\b[!.,?\s]*$/i;
 
 export async function streamSalesChatResponse(params: {
   sessionId: string;
@@ -146,30 +142,29 @@ export async function streamSalesChatResponse(params: {
 
   try {
     const hasContactInfo = Boolean(tryExtractContactFromMessage(userMessage, history));
-    const hasDomainKeyword = REAL_ESTATE_INTENT_REGEX.test(userMessage);
 
-    // 0. Hard pre-LLM block for obvious math/trivia/coding or off-topic prompts
-    if (OBVIOUS_OFF_TOPIC_REGEX.test(userMessage) && !hasContactInfo) {
+    // 0. Fast-path friendly response for pure greetings ("hi", "helloo", "hey", "how are you")
+    if (GREETING_ONLY_REGEX.test(userMessage) && !hasContactInfo) {
+      const friendlyGreeting =
+        "Hello! Great to have you here at **The Eastern Chambers**. Are you exploring **office sizes**, **pricing**, or **connectivity** in Vikhroli West today?";
+      await emitSimulatedStream(friendlyGreeting, callbacks);
+      return;
+    }
+
+    // 1. Pre-LLM block for pure math calculations like "what 2+2"
+    if (OBVIOUS_MATH_OR_CODE_REGEX.test(userMessage) && !hasContactInfo) {
       const refusal =
-        "I can only assist with enquiries regarding **The Eastern Chambers** workspaces, floor plans, pricing, and site visits. How may I help with your office requirement?";
+        "I'm dedicated to helping you with **The Eastern Chambers** workspaces! Feel free to ask me about our office sizes, pricing trends, amenities, or Vikhroli connectivity.";
       await emitSimulatedStream(refusal, callbacks);
       return;
     }
 
-    // 1. Retrieve top relevant knowledge chunks via Hybrid RAG
+    // 2. Retrieve top relevant knowledge chunks via Hybrid RAG
     const retrievedChunks = await ragEngine.retrieve(userMessage, 4);
     const topScore = retrievedChunks[0]?.score || 0;
 
-    // If query has no real-estate keywords, no contact info, and very low RAG similarity (< 0.34), block off-topic deviation
-    if (!hasDomainKeyword && !hasContactInfo && topScore < 0.34) {
-      const refusal =
-        "I can only assist with enquiries regarding **The Eastern Chambers** workspaces, floor plans, pricing, and site visits. What office requirement can I help you explore?";
-      await emitSimulatedStream(refusal, callbacks);
-      return;
-    }
-
-    // Only attach the "✓ Verified" source badge when the query genuinely matches a knowledge topic
-    if (topScore >= 0.35 || (hasDomainKeyword && topScore > 0.15)) {
+    // Only attach the "✓ Verified" source badge when the query genuinely matches a specific knowledge topic
+    if (topScore >= 0.40) {
       callbacks.onSources?.(
         retrievedChunks.map((c) => ({
           id: c.id,
