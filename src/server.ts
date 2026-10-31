@@ -95,7 +95,13 @@ export async function handleRequest(
     return;
   }
 
-  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const matchedPath =
+    (typeof req.headers["x-matched-path"] === "string" && req.headers["x-matched-path"]) ||
+    (typeof req.headers["x-forwarded-url"] === "string" && req.headers["x-forwarded-url"]) ||
+    (typeof req.headers["x-invoke-path"] === "string" && req.headers["x-invoke-path"]) ||
+    req.url ||
+    "/";
+  const url = new URL(matchedPath, `http://${req.headers.host || "localhost"}`);
   const pathname = url.pathname;
 
   // 0. Root Welcome / Status Page

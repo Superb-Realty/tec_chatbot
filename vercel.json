@@ -2,19 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "functions": {
-    "src/server.ts": {
+    "api/*.ts": {
       "maxDuration": 60,
       "includeFiles": "knowledge/**"
     },
-    "api/index.ts": {
+    "src/server.ts": {
       "maxDuration": 60,
       "includeFiles": "knowledge/**"
     }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index"
-    }
-  ]
+  }
 }
