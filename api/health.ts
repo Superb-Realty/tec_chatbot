@@ -8,3 +8,4 @@ export default async function handler(
   req.url = "/api/health";
   return defaultHandler(req, res);
 }
+

@@ -8,3 +8,4 @@ export default async function handler(
   req.url = "/api/chat";
   return defaultHandler(req, res);
 }
+

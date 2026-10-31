@@ -8,3 +8,4 @@ export default async function handler(
   req.url = "/api/leads";
   return defaultHandler(req, res);
 }
+
