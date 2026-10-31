@@ -472,3 +472,16 @@ async function bootstrap() {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   void bootstrap();
 }
+
+/**
+ * Default export required by Vercel Serverless Functions
+ * Invoked automatically for incoming HTTP requests on Vercel deployments.
+ */
+export default async function handler(
+  req: http.IncomingMessage,
+  res: http.ServerResponse
+) {
+  await ragEngine.initialize();
+  await handleRequest(req, res);
+}
+
