@@ -180,11 +180,8 @@ function buildSystemPrompt(
      • **[Highlight]:** Short, 1-sentence explanation.
    - Use small, direct sentences that are easy to scan in 3 seconds.
    - Separate bullet points from your closing question with a blank line.
-3. **Legitimate 10-Digit Mobile Number Validation (STRICT):**
-   - A genuine Indian mobile number MUST have at least 10 digits and start with 6, 7, 8, or 9 (e.g., 9820012345, +91 98200 12345).
-   - If a visitor provides an incomplete number (fewer than 10 digits, like 12345, 98200, 99999), DO NOT accept it and DO NOT call \`capture_sales_lead\`.
-   - Instead, politely ask:
-     "It looks like that phone number is incomplete. Could you please share your complete 10-digit mobile or WhatsApp number so our Sales Desk can send the floor plan deck?"
+3. **Contact Details & Lead Capture:**
+   - Phone numbers are validated strictly by the server. When a valid contact number is confirmed, warmly thank the prospect and confirm that our Sales Desk will deliver the floor plans and pricing sheet.
 4. **No Heavy Paragraphs:** Avoid dense blocks of text. A short intro, 2-3 bullets, and a polite closing line is the required format.
 5. **Formatting Rules (STRICT):**
    - **NEVER use em dashes (—) or en dashes (–).** Use commas or standard hyphens (-) only.
@@ -284,7 +281,50 @@ export async function streamSalesChatResponse(params: {
   const { sessionId, userMessage, history, clientIp, callbacks } = params;
 
   try {
-    const hasContactInfo = Boolean(tryExtractContactFromMessage(userMessage, history));
+    // 0A. Deterministic Contact Pre-Processing (Guarantees zero LLM digit-counting errors)
+    const extractedContact = tryExtractContactFromMessage(userMessage, history);
+
+    // Check if the user is typing an incomplete phone number (e.g. 4 to 9 digits with no complete number)
+    const digitsOnly = userMessage.replace(/\D/g, "");
+    if (
+      !extractedContact &&
+      digitsOnly.length >= 4 &&
+      digitsOnly.length < 10 &&
+      !/[a-zA-Z]{5,}/.test(userMessage)
+    ) {
+      const incompleteMsg = `It looks like that contact number has only **${digitsOnly.length} digits**. A standard Indian mobile number has **10 digits** (e.g., 98200 12345). Could you please share your complete 10-digit number so our Sales Desk can send the floor plans?`;
+      await emitSimulatedStream(incompleteMsg, callbacks);
+      return;
+    }
+
+    if (extractedContact) {
+      // 1. Immediately log & capture the lead in database
+      const lead = saveLeadToDb({
+        sessionId,
+        name: extractedContact.name,
+        phone: extractedContact.phone,
+        additionalEnquiry: extractedContact.notes,
+        source: "chat_direct",
+        clientIp,
+      });
+      webhookQueue.enqueue(lead);
+      callbacks.onLeadCaptured?.(lead);
+
+      // 2. If the user message is JUST their contact number/name (no specific building query):
+      const cleanPhone = lead.phone.replace(/^'/, "");
+      const hasSpecificBuildingQuestion =
+        /\b(floor|price|pricing|cost|amenit|carpent|carpet|rent|rera|location|metro|lift|parking|developer|superb|ghp|possession|deck|plan|visit|brochure)\b/i.test(
+          userMessage
+        );
+
+      if (!hasSpecificBuildingQuestion) {
+        const directReply = `Thank you so much, **${lead.name}**! I have shared your 10-digit contact (**${cleanPhone}**) with our Sales Desk.\n\n• **Instant Document Delivery:** We are arranging the complete **Floor Plan Deck & Commercial Pricing Sheet** for **The Eastern Chambers**.\n• **Private Walkthrough:** Would you also like to schedule an exclusive site visit at LBS Marg, Vikhroli West?\n\nFor immediate assistance, our direct hotline is **+91 9090 263 264**.`;
+        await emitSimulatedStream(directReply, callbacks);
+        return;
+      }
+    }
+
+    const hasContactInfo = Boolean(extractedContact);
 
     // 0. Fast-path friendly response for pure greetings ("hi", "helloo", "hey", "how are you")
     if (GREETING_ONLY_REGEX.test(userMessage) && !hasContactInfo) {
