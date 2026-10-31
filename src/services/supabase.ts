@@ -269,3 +269,92 @@ export async function checkDistributedRateLimitInSupabase(params: {
   }
 }
 
+export interface ChatMessageRecord {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: Array<{ id: string; title: string; category: string; score: number }>;
+  leadCaptured?: { id: string; name: string; phone: string } | null;
+  clientIp?: string;
+  createdAt: string;
+}
+
+/**
+ * 7. Asynchronously logs conversation turns to Supabase `tec_chat_conversations`
+ */
+export async function saveChatMessageToSupabase(
+  msg: ChatMessageRecord
+): Promise<boolean> {
+  if (!ENV.SUPABASE_ENABLED) return false;
+
+  try {
+    const res = await fetch(`${ENV.SUPABASE_URL}/rest/v1/tec_chat_conversations`, {
+      method: "POST",
+      headers: getSupabaseHeaders({ Prefer: "return=minimal" }),
+      body: JSON.stringify({
+        id: msg.id,
+        session_id: msg.sessionId,
+        role: msg.role,
+        content: msg.content,
+        sources: msg.sources || [],
+        lead_captured: msg.leadCaptured || null,
+        client_ip: msg.clientIp || "",
+        created_at: msg.createdAt,
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 8. Fetches conversation history for analysis (Protected admin endpoint)
+ */
+export async function fetchChatConversationsFromSupabase(params?: {
+  sessionId?: string;
+  limit?: number;
+}): Promise<ChatMessageRecord[] | null> {
+  if (!ENV.SUPABASE_ENABLED) return null;
+
+  try {
+    const limit = params?.limit || 100;
+    const sessionFilter = params?.sessionId
+      ? `&session_id=eq.${encodeURIComponent(params.sessionId)}`
+      : "";
+    const res = await fetch(
+      `${ENV.SUPABASE_URL}/rest/v1/tec_chat_conversations?select=*${sessionFilter}&order=created_at.desc&limit=${limit}`,
+      {
+        method: "GET",
+        headers: getSupabaseHeaders(),
+      }
+    );
+
+    if (!res.ok) return null;
+    const rows = (await res.json()) as Array<{
+      id: string;
+      session_id: string;
+      role: "user" | "assistant";
+      content: string;
+      sources: Array<{ id: string; title: string; category: string; score: number }>;
+      lead_captured: { id: string; name: string; phone: string } | null;
+      client_ip: string;
+      created_at: string;
+    }>;
+
+    return rows.map((r) => ({
+      id: r.id,
+      sessionId: r.session_id,
+      role: r.role,
+      content: r.content,
+      sources: r.sources,
+      leadCaptured: r.lead_captured,
+      clientIp: r.client_ip,
+      createdAt: r.created_at,
+    }));
+  } catch {
+    return null;
+  }
+}
+

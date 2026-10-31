@@ -6,7 +6,12 @@ import {
   fetchRecentLeadsFromSupabase,
   insertLeadToSupabase,
   updateLeadSyncInSupabase,
+  saveChatMessageToSupabase,
+  fetchChatConversationsFromSupabase,
+  type ChatMessageRecord,
 } from "./supabase.ts";
+
+export type { ChatMessageRecord };
 
 export interface LeadRecord {
   id: string;
@@ -273,4 +278,72 @@ export function clearTestLeads(): void {
       memoryLeads.splice(i, 1);
     }
   }
+}
+
+// In-memory conversation buffer (holds up to 1,500 recent turns for fast analytics)
+const memoryConversations: ChatMessageRecord[] = [];
+
+/**
+ * Persists an incoming user or assistant message for session review & analytics.
+ * Synchronously buffers in memory and asynchronously saves to Supabase `tec_chat_conversations`.
+ */
+export function saveChatMessage(input: {
+  sessionId: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: Array<{ id: string; title: string; category: string; score: number }>;
+  leadCaptured?: { id: string; name: string; phone: string } | null;
+  clientIp?: string;
+}): ChatMessageRecord {
+  const id = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const createdAt = new Date().toISOString();
+
+  const record: ChatMessageRecord = {
+    id,
+    sessionId: input.sessionId,
+    role: input.role,
+    content: input.content,
+    sources: input.sources,
+    leadCaptured: input.leadCaptured,
+    clientIp: (input.clientIp || "127.0.0.1").replace(/\.\d+$/, ".xxx"),
+    createdAt,
+  };
+
+  memoryConversations.unshift(record);
+  if (memoryConversations.length > 1500) {
+    memoryConversations.pop();
+  }
+
+  // Persist to Cloud Supabase PostgreSQL (`tec_chat_conversations` table)
+  if (ENV.SUPABASE_ENABLED) {
+    void saveChatMessageToSupabase(record);
+  }
+
+  return record;
+}
+
+/**
+ * Retrieves conversation logs for analytics and performance review.
+ */
+export async function getRecentConversations(params?: {
+  sessionId?: string;
+  limit?: number;
+}): Promise<ChatMessageRecord[]> {
+  const limit = params?.limit || 50;
+
+  if (ENV.SUPABASE_ENABLED) {
+    const cloudMsgs = await fetchChatConversationsFromSupabase({
+      sessionId: params?.sessionId,
+      limit,
+    });
+    if (cloudMsgs) return cloudMsgs;
+  }
+
+  if (params?.sessionId) {
+    return memoryConversations
+      .filter((m) => m.sessionId === params.sessionId)
+      .slice(0, limit);
+  }
+
+  return memoryConversations.slice(0, limit);
 }

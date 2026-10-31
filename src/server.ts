@@ -11,6 +11,8 @@ import {
   getLeadStats,
   getRecentLeads,
   saveLeadToDb,
+  saveChatMessage,
+  getRecentConversations,
 } from "./services/db.ts";
 import { checkDistributedRateLimitInSupabase } from "./services/supabase.ts";
 import { webhookQueue } from "./services/webhook-queue.ts";
@@ -266,6 +268,18 @@ export async function handleRequest(
           .slice(-10)
       : [];
 
+    // 1. Asynchronously log incoming user message
+    saveChatMessage({
+      sessionId,
+      role: "user",
+      content: cleanMessage,
+      clientIp,
+    });
+
+    let assistantText = "";
+    let capturedSources: Array<{ id: string; title: string; category: string; score: number }> = [];
+    let capturedLeadInfo: { id: string; name: string; phone: string } | null = null;
+
     try {
       await streamSalesChatResponse({
         sessionId,
@@ -274,19 +288,32 @@ export async function handleRequest(
         clientIp,
         callbacks: {
           onSources: (sources) => {
+            capturedSources = sources;
             sendSseEvent("sources", { sources });
           },
           onToken: (token) => {
+            assistantText += token;
             sendSseEvent("token", { token });
           },
           onLeadCaptured: (lead) => {
-            sendSseEvent("lead_captured", {
+            capturedLeadInfo = {
               id: lead.id,
               name: lead.name,
               phone: lead.phone.replace(/^'/, ""),
-            });
+            };
+            sendSseEvent("lead_captured", capturedLeadInfo);
           },
           onDone: () => {
+            if (assistantText.trim()) {
+              saveChatMessage({
+                sessionId,
+                role: "assistant",
+                content: assistantText.trim(),
+                sources: capturedSources,
+                leadCaptured: capturedLeadInfo,
+                clientIp,
+              });
+            }
             sendSseEvent("done", { ok: true });
             if (!res.writableEnded) res.end();
             releaseSlotOnce();
@@ -391,7 +418,36 @@ export async function handleRequest(
     return;
   }
 
-  // 5. Get or Add FAQs Dynamically (Drop-in FAQ Management)
+  // 5. Get Recent Chat Conversations for Analytics (Protected - Secret Token Required)
+  if (req.method === "GET" && pathname === "/api/conversations") {
+    const authHeader = req.headers.authorization || "";
+    const secretHeader = req.headers["x-enquiry-secret"] || "";
+    const providedToken = authHeader.replace(/^Bearer\s+/i, "") || secretHeader;
+
+    if (providedToken !== ENV.ENQUIRY_SECRET_TOKEN) {
+      sendJson(res, 401, {
+        error: "Unauthorized: Access to conversation logs is strictly restricted.",
+      });
+      return;
+    }
+
+    const sessionIdParam = url.searchParams.get("sessionId") || undefined;
+    const limitParam = Number(url.searchParams.get("limit") || 50);
+
+    const conversations = await getRecentConversations({
+      sessionId: sessionIdParam,
+      limit: limitParam,
+    });
+
+    sendJson(res, 200, {
+      total: conversations.length,
+      sessionId: sessionIdParam || "all",
+      conversations,
+    });
+    return;
+  }
+
+  // 6. Get or Add FAQs Dynamically (Drop-in FAQ Management)
   if (req.method === "GET" && pathname === "/api/faqs") {
     sendJson(res, 200, {
       count: ragEngine.getFaqs().length,
