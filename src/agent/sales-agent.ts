@@ -122,6 +122,78 @@ const CAPTURE_LEAD_TOOL = {
   },
 };
 
+/**
+ * Sentinel the LLM must emit when the knowledge base does not contain the answer.
+ * The server intercepts it and replaces it with the fixed Sales Team handoff below,
+ * so the model can never improvise a "best guess" answer.
+ */
+const NO_KB_ANSWER_TOKEN = "[[NO_KB_ANSWER]]";
+
+const SALES_TEAM_FALLBACK_REPLY =
+  "I'm sorry, I don't have verified information on that in my knowledge base, and I don't want to give you an inaccurate answer.\n\nPlease contact our **Sales Team** for the correct details:\n\n• **Phone / WhatsApp:** +91 9090 263 264\n• **Email:** info@superbrealty.in";
+
+/**
+ * Minimum BM25 relevance for the offline (no-LLM) path to treat a chunk as a genuine match.
+ * Below this, the query is considered outside the knowledge base.
+ */
+const MIN_BM25_RELEVANCE = 2.0;
+
+/**
+ * Returns false when retrieval found nothing real (e.g. the BM25 engine's
+ * zero-match placeholder chunks with score 0.1). Hybrid/vector results always
+ * return something, so for those the LLM-side NO_KB_ANSWER contract is the gate.
+ */
+function hasGenuineLexicalOrHybridMatch(chunks: RetrievedChunk[]): boolean {
+  const top = chunks[0];
+  if (!top) return false;
+  if (top.matchType === "bm25") return top.score > 0.1;
+  return true;
+}
+
+/**
+ * Share of the question's meaningful words (stopwords removed) that appear in the
+ * knowledge text. Used by the offline path to reject coincidental matches such as
+ * "Is there a swimming pool?" hitting an unrelated "Is there a drivers' room?" FAQ.
+ */
+const QUERY_STOPWORDS = new Set([
+  "a", "an", "the", "is", "are", "was", "were", "be", "there", "any", "do", "does", "did",
+  "what", "whats", "which", "who", "whom", "where", "when", "why", "how", "many", "much",
+  "of", "to", "in", "on", "at", "for", "from", "by", "with", "and", "or", "it", "its",
+  "this", "that", "these", "those", "i", "me", "my", "we", "our", "you", "your", "can",
+  "could", "would", "will", "shall", "should", "please", "tell", "about", "give", "know",
+  "have", "has", "available", "project", "eastern", "chambers", "building",
+]);
+
+function keywordCoverage(question: string, knowledgeText: string): number {
+  const words = question
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !QUERY_STOPWORDS.has(w));
+  if (words.length === 0) return 0;
+  const haystack = knowledgeText.toLowerCase();
+  const hits = words.filter((w) => {
+    // Allow simple plural / stem variants ("lifts" vs "lift", "possesion" typo stays unmatched).
+    const stem = w.length > 4 ? w.replace(/(es|s)$/, "") : w;
+    return haystack.includes(w) || haystack.includes(stem);
+  }).length;
+  return hits / words.length;
+}
+
+/**
+ * The chatbot must never reach the internet. OpenAI's "*-search-*" chat models
+ * browse the web on their own, so they are refused here and replaced with the
+ * standard offline model, which can only see the knowledge we pass it.
+ */
+function resolveOfflineChatModel(configured: string): string {
+  const model = (configured || "").trim();
+  if (!model || /search|browse|online|web/i.test(model)) {
+    console.warn(`[Agent] Refusing web-enabled chat model "${model}". Using gpt-4o-mini.`);
+    return "gpt-4o-mini";
+  }
+  return model;
+}
+
 function hasUserAlreadySharedContact(history: ChatTurn[]): boolean {
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
   return history.some((h) => {
@@ -196,6 +268,13 @@ function buildSystemPrompt(
      "All client communications at **The Eastern Chambers** are strictly confidential under non-disclosure standards. I do not have access to any visitor records or database information."
 8. **Lead Capture Tool:** Whenever the user shares a legitimate 10-digit phone number or email ID (and/or name), call \`capture_sales_lead\` immediately.
 9. **Direct Contact (if asked):** Phone: **+91 9090 263 264** | Email: **info@superbrealty.in**
+### KNOWLEDGE-BASE-ONLY CONTRACT (HIGHEST PRIORITY - OVERRIDES EVERYTHING ABOVE AND BELOW):
+- The ONLY permitted source of facts is the text inside <RETRIEVED_KNOWLEDGE>. You have NO internet access and must NOT use your general training knowledge, assumptions, estimates, or inferences about this project, Mumbai real estate, or anything else.
+- Every fact you state (numbers, dates, years, prices, distances, names, specifications, timelines, availability, offers) MUST appear explicitly in <RETRIEVED_KNOWLEDGE>. Do not round, extrapolate, combine into new claims, or "fill in" missing details.
+- Earlier assistant messages in this chat are NOT a source of truth. Only <RETRIEVED_KNOWLEDGE> is.
+- If <RETRIEVED_KNOWLEDGE> does not contain the answer, or only partially covers it, or you are unsure, do NOT answer and do NOT guess. Instead reply with EXACTLY this single token and nothing else:
+  ${NO_KB_ANSWER_TOKEN}
+- Never say things like "typically", "usually", "expected to", "around", or "probably" to cover for missing information.
 
 ${stageInstruction}
 
@@ -354,6 +433,12 @@ export async function streamSalesChatResponse(params: {
     const retrievedChunks = await ragEngine.retrieve(userMessage, 4);
     const topScore = retrievedChunks[0]?.score || 0;
 
+    // Hard gate: nothing in the knowledge base matched -> never let the model improvise.
+    if (retrievedChunks.length === 0 || !hasGenuineLexicalOrHybridMatch(retrievedChunks)) {
+      await emitSimulatedStream(SALES_TEAM_FALLBACK_REPLY, callbacks);
+      return;
+    }
+
     // Only attach the "✓ Verified" source badge when the query genuinely matches a specific knowledge topic
     if (topScore >= 0.40) {
       callbacks.onSources?.(
@@ -425,11 +510,13 @@ async function streamWithOpenAi(params: {
       Authorization: `Bearer ${ENV.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: ENV.OPENAI_CHAT_MODEL,
+      model: resolveOfflineChatModel(ENV.OPENAI_CHAT_MODEL),
       messages,
+      // Only the lead-capture tool is exposed. No web search / browsing / code tools.
       tools: [CAPTURE_LEAD_TOOL],
       tool_choice: "auto",
-      temperature: 0.3,
+      temperature: 0,
+      top_p: 1,
       max_tokens: 280,
       stream: true,
     }),
@@ -447,6 +534,42 @@ async function streamWithOpenAi(params: {
   let toolCallArgs = "";
   let toolCallTriggered = false;
   let streamedAnyText = false;
+
+  // Sentinel interception: hold back the first characters until we know the model
+  // is not replying with NO_KB_ANSWER_TOKEN, so a refusal is never streamed raw.
+  let pendingText = "";
+  let sentinelDecided = false;
+  let noKbAnswer = false;
+
+  const handleContent = (piece: string) => {
+    if (noKbAnswer) return;
+    if (sentinelDecided) {
+      if (piece.includes(NO_KB_ANSWER_TOKEN)) {
+        // Model gave up mid-answer: drop the token and hand off to the Sales Team.
+        noKbAnswer = true;
+        const before = piece.split(NO_KB_ANSWER_TOKEN)[0];
+        if (before) callbacks.onToken(before);
+        return;
+      }
+      callbacks.onToken(piece);
+      streamedAnyText = true;
+      return;
+    }
+    pendingText += piece;
+    const trimmed = pendingText.trimStart();
+    if (trimmed.startsWith(NO_KB_ANSWER_TOKEN) || trimmed.includes(NO_KB_ANSWER_TOKEN)) {
+      sentinelDecided = true;
+      noKbAnswer = true;
+      return;
+    }
+    const couldStillBeToken = NO_KB_ANSWER_TOKEN.startsWith(trimmed);
+    if (!couldStillBeToken && trimmed.length > 0) {
+      sentinelDecided = true;
+      callbacks.onToken(pendingText);
+      streamedAnyText = true;
+      pendingText = "";
+    }
+  };
 
   while (true) {
     const { done, value } = await reader.read();
@@ -477,8 +600,7 @@ async function streamWithOpenAi(params: {
         if (!delta) continue;
 
         if (delta.content) {
-          streamedAnyText = true;
-          callbacks.onToken(delta.content);
+          handleContent(delta.content);
         }
 
         if (delta.tool_calls && delta.tool_calls[0]?.function?.arguments) {
@@ -489,6 +611,21 @@ async function streamWithOpenAi(params: {
         // Ignore partial JSON chunk
       }
     }
+  }
+
+  // Resolve any short reply still held back by the sentinel buffer.
+  if (!sentinelDecided && pendingText) {
+    if (pendingText.trim() && !NO_KB_ANSWER_TOKEN.startsWith(pendingText.trim())) {
+      callbacks.onToken(pendingText);
+      streamedAnyText = true;
+    } else {
+      noKbAnswer = true;
+    }
+  }
+
+  if (noKbAnswer && !toolCallTriggered) {
+    callbacks.onToken((streamedAnyText ? "\n\n" : "") + SALES_TEAM_FALLBACK_REPLY);
+    streamedAnyText = true;
   }
 
   // Handle tool call if OpenAI triggered `capture_sales_lead`
@@ -621,18 +758,25 @@ async function streamWithGroundedRagEngine(params: {
   // 3. Synthesize grounded response from top retrieved RAG chunk(s)
   const top = retrievedChunks[0];
 
+  // Without an LLM we cannot verify partial matches, so only answer on a strong lexical hit
+  // where the question's key words genuinely appear in the matched knowledge entry.
+  const isStrongMatch =
+    top &&
+    (top.matchType !== "bm25" || top.score >= MIN_BM25_RELEVANCE) &&
+    keywordCoverage(userMessage, top.content) >= 0.6;
+
   let reply = "";
-  if (top && top.source === "faqs.json") {
+  if (!isStrongMatch) {
+    reply = SALES_TEAM_FALLBACK_REPLY;
+  } else if (top.source === "faqs.json") {
     const answerPart = top.content.replace(/^FAQ Question:.*?\nAnswer:\s*/is, "").trim();
     reply = `${answerPart}\n\nShare your **Name & Phone** if you'd like the floor plan deck.`;
-  } else if (top) {
+  } else {
     const cleanedBody = top.content
       .replace(/^#+\s+.*$/gm, "")
       .trim()
       .slice(0, 280);
     reply = `${cleanedBody}\n\nShare your **Name & Phone** to receive the commercial sheet.`;
-  } else {
-    reply = `**The Eastern Chambers** offers Grade A+ offices (391 to 13,500 sq.ft.) on LBS Marg, Vikhroli West. Share your **Name & Phone** for the floor plan deck.`;
   }
 
   await emitSimulatedStream(reply, callbacks);
