@@ -24,7 +24,7 @@
     "id": "faq-location",
     "category": "Location & Address",
     "question": "Where is the Project Located?",
-    "answer": "The Eastern Chambers is strategically located at LBS Marg, Vikhroli West (Amber Compound, Plot No. 11A, LBS Marg, Surya Nagar, Vikhroli West, Mumbai 400079), just a 2-minute walk from Surya Nagar Metro Station (Line 4) and Vikhroli Railway Station.",
+    "answer": "The Eastern Chambers is strategically located at LBS Marg, Vikhroli West (Amber Compound, Plot No. 11A, LBS Marg, Surya Nagar, Vikhroli West, Mumbai 400079), just a 2-minute walk from the upcoming Surya Nagar Metro Station (Line 4) and 2-minute walk from Vikhroli Railway Station (Central Line).",
     "tags": ["location", "address", "where", "lbs marg", "vikhroli", "vikhroli west", "amber compound"]
   },
   {
@@ -45,8 +45,15 @@
     "id": "faq-upcoming-connectivity",
     "category": "Connectivity & Transit",
     "question": "What are the Upcoming Connectivity Nodes and Infrastructure projects?",
-    "answer": "Upcoming transformational connectivity nodes include:\n• Metro Lines: Metro Line 4 (Surya Nagar Station, 0.2 KM / 2 min walk), Metro Line 6 (Swami Samarth to Vikhroli, 2.8 KM), and Metro Line 14 (Vikhroli to Badlapur corridor, 0.7 KM)\n• Road & Bridge Corridors: Eastern Freeway Extension, GMLR (Goregaon-Mulund Link Road), Vikhroli-Kopar Khairane Creek Bridge (Navi Mumbai link), and the 90 Feet DP Road.",
+    "answer": "Upcoming transformational connectivity nodes include:\n• Metro Lines: Metro Line 4 (Surya Nagar Station, 0.2 KM / 2 min walk - Under Construction), Metro Line 6 (Swami Samarth to Vikhroli, 2.8 KM), and Metro Line 14 (Vikhroli to Badlapur corridor, 0.7 KM)\n• Road & Bridge Corridors: Eastern Freeway Extension, GMLR (Goregaon-Mulund Link Road), Vikhroli-Kopar Khairane Creek Bridge (Navi Mumbai link), and the 90 Feet DP Road.",
     "tags": ["upcoming", "infrastructure", "metro", "metro 4", "metro 6", "metro 14", "eastern freeway", "gmlr", "koparkhairane bridge", "future"]
+  },
+  {
+    "id": "faq-metro-line-4-operational",
+    "category": "Connectivity & Transit",
+    "question": "Is Metro Line 4 operational? What is the status of Surya Nagar Metro Station?",
+    "answer": "No, Metro Line 4 (Wadala–Ghatkopar–Mulund–Thane) is currently under construction and is NOT yet operational. The upcoming Surya Nagar Metro Station on Line 4 is located just 0.2 KM (a 2-minute walk) from The Eastern Chambers. Currently operational rail transit includes Vikhroli Railway Station on the Central Line (0.4 KM / 2-minute walk) and Ghatkopar Metro Station on Line 1 (4.1 KM / 8 minutes).",
+    "tags": ["metro line 4", "line 4", "operational", "is metro operational", "metro line 4 operational", "surya nagar metro", "under construction", "running", "status"]
   },
   {
     "id": "faq-nearby-social-infra",

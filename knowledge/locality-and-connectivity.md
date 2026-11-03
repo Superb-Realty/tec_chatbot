@@ -3,13 +3,12 @@
 ## Exact Location
 **The Eastern Chambers**, Amber Compound, Plot No. 11A, LBS Marg, Surya Nagar, Vikhroli West, Mumbai – 400079.
 
-## 1. Existing Multi-Modal Connectivity
-- **Metro Line 4 (Surya Nagar Station):** 0.2 KM · 2 min walk
-- **Vikhroli Railway Station:** 0.4 KM · 2 min
+## 1. Existing Operational Multi-Modal Connectivity
+- **Vikhroli Railway Station (Central Line):** 0.4 KM · 2 min walk
 - **Vikhroli East-West Flyover:** 0.4 KM · 2 min
 - **Eastern Express Highway (EEH):** 1.6 KM · 3–4 min
 - **JVLR (Jogeshwari-Vikhroli Link Road):** 2.2 KM · 5 min
-- **Ghatkopar Metro Station (Line 1 / Blue Line):** 4.1 KM · 8 min
+- **Ghatkopar Metro Station (Line 1 / Blue Line - Currently Operational):** 4.1 KM · 8 min
 - **Eastern Freeway (Direct to South Mumbai):** 8.4 KM · 12–14 min
 - **SCLR (Santacruz-Chembur Link Road):** 9.3 KM · 15 min
 - **CSMIA T2 International Airport:** 7.4 KM · 15–18 min
@@ -18,13 +17,13 @@
 - **Sion-Panvel Highway (Pune/Goa access):** 13.6 KM · 20 min
 - **Navi Mumbai International Airport (NMIA):** 25.6 KM · 40–45 min
 
-## 2. Upcoming Transformational Infrastructure
-- **Metro Line 4 (Wadala–Ghatkopar–Thane):** 0.2 KM · Direct Access at Surya Nagar
-- **Metro Line 14 (Vikhroli–Badlapur corridor):** 0.7 KM · 2 min
-- **90 Feet DP Road (Vikhroli–Powai arterial):** 1.1 KM · 3 min
-- **Metro Line 6 (Swami Samarth–Vikhroli / Pink Line):** 2.8 KM · 5 min
-- **Goregaon-Mulund Link Road (GMLR):** 7.6 KM · 12 min
-- **Kopar Khairane–Vikhroli Creek Bridge:** 8.1 KM · 10 min
+## 2. Upcoming & Under-Construction Transformational Infrastructure
+- **Metro Line 4 (Wadala–Ghatkopar–Thane, Surya Nagar Station):** 0.2 KM · 2 min walk (Under Construction / Upcoming, NOT yet operational)
+- **Metro Line 14 (Vikhroli–Badlapur corridor):** 0.7 KM · 2 min (Upcoming)
+- **90 Feet DP Road (Vikhroli–Powai arterial):** 1.1 KM · 3 min (Under Development)
+- **Metro Line 6 (Swami Samarth–Vikhroli / Pink Line):** 2.8 KM · 5 min (Under Construction)
+- **Goregaon-Mulund Link Road (GMLR):** 7.6 KM · 12 min (Under Construction)
+- **Kopar Khairane–Vikhroli Creek Bridge:** 8.1 KM · 10 min (Planned)
 
 ## 3. Nearby Key Business Hubs & Areas
 - **Powai (Hiranandani):** 2.9 KM · 8 min

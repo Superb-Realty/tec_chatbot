@@ -7,6 +7,7 @@ import { streamSalesChatResponse } from "../agent/sales-agent.ts";
 const questions = [
   "How many lifts are there?",
   "date of possesion",
+  "is the metro line 4 operational",
   "Is there a swimming pool?",
   "Who won the cricket world cup?",
   "What is the floor to floor height?",
