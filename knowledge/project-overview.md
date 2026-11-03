@@ -6,7 +6,7 @@
 - **Principal Architects:** **Daisaria Associates**
 - **Location:** Amber Compound, Plot No. 11A, LBS Marg, Surya Nagar, Vikhroli West, Mumbai – 400079
 - **MahaRERA Registration Number:** `P51800054892` (https://maharera.mahaonline.gov.in)
-- **Direct Sales & Leasing Contact:** +91 9090 263 264 | info@superbrealty.in | WhatsApp: https://wa.me/919090263264
+- **Direct Sales Contact:** [+91 9090 263 264](tel:+919090263264) | [info@superbrealty.in](mailto:info@superbrealty.in) | [Message on WhatsApp](https://wa.me/919090263264?text=Hi%2C%20I%20am%20inquiring%20about%20The%20Eastern%20Chambers)
 
 ## Land, Area & Building Structure
 - **Land Tenure & Plot Area:** **Freehold Land** spanning approx. **39,500 sq.ft. (~1 Acre)** with a **10,000 sq.ft. Dedicated Green Reserve**
