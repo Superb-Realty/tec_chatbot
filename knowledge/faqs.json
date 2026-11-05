@@ -7,6 +7,13 @@
     "tags": ["name", "project", "the eastern chambers", "rera", "p51800054892"]
   },
   {
+    "id": "faq-ai-assistant-sia",
+    "category": "Project Identity",
+    "question": "What is your name / Who are you / Who is SIA?",
+    "answer": "I am SIA, the official AI Sales Concierge for The Eastern Chambers. I am here to help you explore project floor plans, unit specifications, pricing trends, amenities, connectivity, and schedule a private site visit.",
+    "tags": ["sia", "name", "who are you", "what is your name", "ai", "concierge", "sales concierge", "assistant"]
+  },
+  {
     "id": "faq-developers",
     "category": "Developer & Architects",
     "question": "Who are the Developers of The Eastern Chambers?",
